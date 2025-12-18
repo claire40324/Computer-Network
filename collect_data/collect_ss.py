@@ -11,13 +11,13 @@ parser.add_argument("--port", type=int, required=True)
 parser.add_argument("--interval", type=float, default=0.5)
 parser.add_argument("--output", type=str, required=True)
 parser.add_argument("--dst", type=str, default=None)      # server IP
-parser.add_argument("--algo", type=str, required=True)    # 這次 flow 使用的 TCP CC (reno/bbr/cubic/vegas)
+parser.add_argument("--algo", type=str, required=True)    
 args = parser.parse_args()
 
 expected_algo = args.algo.lower()
 
-# ====== Regex 定義：從 ss 第二行抓資訊 ======
-# 例子:
+# ====== Regex definition：get from ss second line ======
+# for example:
 #   cubic wscale:7,7 rtt:12.3/1.2 mss:1448 cwnd:1234 ssthresh:...
 #   bytes_acked:12345 bytes_sent:23456 segs_out:123 segs_in:120 ...
 #   pacing_rate 10.2Mbps
@@ -37,8 +37,8 @@ RE_ALGO = re.compile(r"\b(cubic|reno|bbr2?|bbr|vegas|yeah|westwood)\b")
 
 def parse_rate_to_mbps(val_str, unit_str):
     """
-    把 '10.2' + 'Mbps' 轉成 float(Mbps)
-    如果沒有單位，就假設是 bits/s
+    turn '10.2' + 'Mbps' to float(Mbps)
+    default bits/s
     """
     try:
         val = float(val_str)
@@ -53,10 +53,10 @@ def parse_rate_to_mbps(val_str, unit_str):
     elif unit_str.startswith("G"):
         return val * 1000.0
     else:
-        # 沒單位 -> bits/s
+        # default -> bits/s
         return val / 1e6
 
-# ====== 組 ss 指令 ======
+# ======  ss command ======
 filter_expr = f"dport = {args.port}"
 if args.dst:
     filter_expr = f"dst {args.dst} dport = {args.port}"
@@ -64,7 +64,6 @@ if args.dst:
 cmd = ["ss", "-tiH", filter_expr]  # H: hide header, t: tcp, i: internal info
 
 with open(args.output, "w") as f:
-    # 注意：algo 欄位是 ground truth，不要拿來當 feature
     header = (
         "wall_time monotonic algo "
         "rtt_ms rtt_var_ms cwnd mss "
@@ -90,36 +89,33 @@ with open(args.output, "w") as f:
 
         lines = result.stdout.strip().splitlines()
         if not lines:
-            # 可能連線還沒建立
             time.sleep(args.interval)
             continue
 
-        # ss -tiH 的輸出形式：
-        # 行 0: "ESTAB ..."
-        # 行 1: "cubic wscale:... rtt:... cwnd:..."
+        # ss -tiH format：
+        # column 0: "ESTAB ..."
+        # column 1: "cubic wscale:... rtt:... cwnd:..."
         for i in range(0, len(lines), 2):
             if i + 1 >= len(lines):
                 break
             info_line = lines[i + 1]
 
-            # 先抓 algo，用來過濾不是這次實驗的 flow
+            # get algo，filter the flow is not this experiment
             m_algo = RE_ALGO.search(info_line)
             algo = m_algo.group(1).lower() if m_algo else "unknown"
 
-            # bbr2 算 bbr
+            # bbr2 computer bbr
             if algo.startswith("bbr"):
                 algo_norm = "bbr"
             else:
                 algo_norm = algo
 
-            # 過濾掉跟這次實驗不同演算法的連線 (例如 ssh, 上一個 flow 殘留等)
             if algo_norm != expected_algo:
                 continue
 
             m_rtt = RE_RTT.search(info_line)
             m_cwnd = RE_CWND.search(info_line)
 
-            # 至少要有 rtt & cwnd 才記錄
             if not (m_rtt and m_cwnd):
                 continue
 
@@ -154,7 +150,6 @@ with open(args.output, "w") as f:
             unacked = int(m_unack.group(1)) if m_unack else 0
 
             if m_retr:
-                # 有些格式是 retrans:3/102，有些是 retrans:3
                 retrans_total = int(m_retr.group(1))
             else:
                 retrans_total = 0
