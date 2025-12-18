@@ -11,12 +11,12 @@ parser.add_argument("--json_dir", required=True, help="directory of iperf3 json 
 parser.add_argument("--out_prefix", required=True, help="output prefix, e.g. data/features")
 args = parser.parse_args()
 
-# 檔名格式：algo_rtt{num}_bw{num}_run{num}
-# 例如：bbr_rtt200_bw500_run5.log / .json
+# format：algo_rtt{num}_bw{num}_run{num}
+# forexample：bbr_rtt200_bw500_run5.log / .json
 NAME_RE = re.compile(r"(reno|bbr|cubic|vegas)_rtt(\d+)_bw(\d+)_run(\d+)", re.IGNORECASE)
 
 def parse_name(fname):
-    """從檔名抓 algo, rtt_setting, bw_setting, run"""
+    """get algo, rtt_setting, bw_setting, run from filename"""
     m = NAME_RE.search(fname)
     if not m:
         return None
@@ -25,9 +25,9 @@ def parse_name(fname):
 
 def parse_json(json_path):
     """
-    從 iperf3 json 抓：
-      - ip_tp_mbps      : bits_per_second 轉 Mbps
-      - ip_mean_rtt_ms  : mean_rtt (μs) 轉 ms
+    from iperf3 json get：
+      - ip_tp_mbps      : bits_per_second turns to Mbps
+      - ip_mean_rtt_ms  : mean_rtt (μs) turns to ms
     """
     try:
         with open(json_path, "r") as f:
@@ -51,9 +51,9 @@ def parse_json(json_path):
 
 def parse_ss_last_line(ss_path):
     """
-    從 ss log 抓最後一筆紀錄：
+    get last record from ss log ：
       wall_time monotonic algo rtt_ms rtt_var_ms cwnd mss pacing_mbps ...
-    並轉成：
+    turns into：
       ss_rtt_ms, ss_rtt_var_ms, ss_cwnd_bytes, ss_pacing_mbps
     """
     try:
@@ -61,7 +61,7 @@ def parse_ss_last_line(ss_path):
             lines = f.read().strip().splitlines()
 
         if len(lines) <= 1:
-            # 只有 header 或是空檔
+            # only header or empty
             return None
 
         last = lines[-1].split()
@@ -74,7 +74,7 @@ def parse_ss_last_line(ss_path):
         mss_bytes = int(last[6])
         pacing_mbps = float(last[7])
 
-        # 統一成 bytes
+        # unify to bytes
         cwnd_bytes = cwnd_segs * mss_bytes
 
         return {
@@ -128,7 +128,7 @@ if not rows:
     print("No data merged!")
     raise SystemExit(0)
 
-# ---------- 寫出含 rtt/bw 的版本 ----------
+# ---------- include rtt/bw features ----------
 out_with = args.out_prefix + "_with_cond.csv"
 fieldnames_with = [
     "algo",
@@ -148,7 +148,7 @@ with open(out_with, "w", newline="") as f:
 
 print(f"[OK] saved: {out_with}")
 
-# ---------- 寫出不含 rtt/bw 的版本 ----------
+# ---------- exclude rtt/bw features ----------
 out_no = args.out_prefix + "_no_cond.csv"
 fieldnames_no = [
     "algo",
