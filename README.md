@@ -13,8 +13,8 @@ Each sub-directory has its own README.md file with further instructions.
 
 We recommend exploring the codebase in the following order:
 
-collect the data (in collect_data/)
-build the features (in build_featuers/)
-train random forest model (in train_model/)
-see confusion matrix and table result  (in result/)
-try new RTT and Bandwidth for testing the model (in collect_data_test)
+- collect the data (in collect_data/)
+- build the features (in build_featuers/)
+- train random forest model (in train_model/)
+- see confusion matrix and table result  (in result/)
+- try new RTT and Bandwidth for testing the model (in collect_data_test)
