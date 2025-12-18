@@ -16,7 +16,6 @@ colors = {
     "vegas": "C3",
 }
 
-# ss log 欄位（依照你現在的輸出）
 SS_COLS = [
     "wall_time", "monotonic", "algo",
     "rtt_ms", "rtt_var_ms",
@@ -31,14 +30,12 @@ plt.rcParams["font.size"] = 10
 
 
 def load_ss_log(path):
-    """讀取一個 ss log，回傳 DataFrame"""
     if not os.path.exists(path):
         raise FileNotFoundError(path)
 
     with open(path, "r") as f:
         first_line = f.readline()
 
-    # 如果第一行是 header，就 skiprows=1
     if first_line.startswith("wall_time"):
         df = pd.read_csv(path, delim_whitespace=True, skiprows=1, names=SS_COLS)
     else:
@@ -48,7 +45,6 @@ def load_ss_log(path):
 
 
 def plot_line_metric(metric, ylabel, title_prefix, filename_prefix):
-    """畫其中一種 metric"""
     plt.figure(figsize=(10, 3))
     for algo in algos:
         fname = f"{algo}_rtt{RTT_MS}_bw{BW_MBIT}_run{RUN}.log"

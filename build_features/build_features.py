@@ -6,17 +6,17 @@ import re
 import csv
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ss_dir", required=True, help="directory of ss logs")
-parser.add_argument("--json_dir", required=True, help="directory of iperf3 json files")
+parser.add_argument("--ss_dir", required=True, help="directory containing ss logs")
+parser.add_argument("--json_dir", required=True, help="directory containing iperf3 json files")
 parser.add_argument("--out_prefix", required=True, help="output prefix, e.g. data/features")
 args = parser.parse_args()
 
-# 檔名格式：algo_rtt{num}_bw{num}_run{num}
-# 例如：bbr_rtt200_bw500_run5.log / .json
+# Filename format: algo_rtt{num}_bw{num}_run{num}
+# Example: bbr_rtt200_bw500_run5.log / .json
 NAME_RE = re.compile(r"(reno|bbr|cubic|vegas)_rtt(\d+)_bw(\d+)_run(\d+)", re.IGNORECASE)
 
 def parse_name(fname):
-    """從檔名抓 algo, rtt_setting, bw_setting, run"""
+    """Extract algo, rtt_setting, bw_setting, and run index from filename"""
     m = NAME_RE.search(fname)
     if not m:
         return None
@@ -25,9 +25,9 @@ def parse_name(fname):
 
 def parse_json(json_path):
     """
-    從 iperf3 json 抓：
-      - ip_tp_mbps      : bits_per_second 轉 Mbps
-      - ip_mean_rtt_ms  : mean_rtt (μs) 轉 ms
+    Extract the following fields from iperf3 JSON output:
+      - ip_tp_mbps     : bits_per_second converted to Mbps
+      - ip_mean_rtt_ms : mean_rtt (microseconds) converted to milliseconds
     """
     try:
         with open(json_path, "r") as f:
@@ -38,7 +38,7 @@ def parse_json(json_path):
         bits_per_second = float(sender_end["bits_per_second"])
         tp_mbps = bits_per_second / 1e6
 
-        mean_rtt_us = float(sender_end.get("mean_rtt", 0.0))  # μs
+        mean_rtt_us = float(sender_end.get("mean_rtt", 0.0))  # microseconds
         mean_rtt_ms = mean_rtt_us / 1000.0
 
         return {
@@ -51,9 +51,11 @@ def parse_json(json_path):
 
 def parse_ss_last_line(ss_path):
     """
-    從 ss log 抓最後一筆紀錄：
+    Extract the last record from an ss log.
+    Expected format:
       wall_time monotonic algo rtt_ms rtt_var_ms cwnd mss pacing_mbps ...
-    並轉成：
+
+    Convert it into:
       ss_rtt_ms, ss_rtt_var_ms, ss_cwnd_bytes, ss_pacing_mbps
     """
     try:
@@ -61,7 +63,7 @@ def parse_ss_last_line(ss_path):
             lines = f.read().strip().splitlines()
 
         if len(lines) <= 1:
-            # 只有 header 或是空檔
+            # Header only or empty file
             return None
 
         last = lines[-1].split()
@@ -74,7 +76,7 @@ def parse_ss_last_line(ss_path):
         mss_bytes = int(last[6])
         pacing_mbps = float(last[7])
 
-        # 統一成 bytes
+        # Normalize cwnd to bytes
         cwnd_bytes = cwnd_segs * mss_bytes
 
         return {
@@ -104,14 +106,14 @@ for fname in os.listdir(args.ss_dir):
     json_path = os.path.join(args.json_dir, fname.replace(".log", ".json"))
 
     if not os.path.exists(json_path):
-        print(f"[warn] no JSON for {fname}")
+        print(f"[warn] missing JSON file for {fname}")
         continue
 
     ss_feat = parse_ss_last_line(ss_path)
     json_feat = parse_json(json_path)
 
     if not ss_feat or not json_feat:
-        print(f"[warn] missing feature for {fname}")
+        print(f"[warn] missing features for {fname}")
         continue
 
     row = {
@@ -128,7 +130,7 @@ if not rows:
     print("No data merged!")
     raise SystemExit(0)
 
-# ---------- 寫出含 rtt/bw 的版本 ----------
+# ---------- Write output WITH RTT/BW conditions ----------
 out_with = args.out_prefix + "_with_cond.csv"
 fieldnames_with = [
     "algo",
@@ -148,7 +150,7 @@ with open(out_with, "w", newline="") as f:
 
 print(f"[OK] saved: {out_with}")
 
-# ---------- 寫出不含 rtt/bw 的版本 ----------
+# ---------- Write output WITHOUT RTT/BW conditions ----------
 out_no = args.out_prefix + "_no_cond.csv"
 fieldnames_no = [
     "algo",
