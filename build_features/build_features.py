@@ -77,6 +77,7 @@ def parse_ss_last_line(ss_path):
         pacing_mbps = float(last[7])
 
         # Normalize cwnd to bytes
+
         cwnd_bytes = cwnd_segs * mss_bytes
 
         return {

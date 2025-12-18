@@ -12,6 +12,7 @@ parser.add_argument("--interval", type=float, default=0.5)
 parser.add_argument("--output", type=str, required=True)
 parser.add_argument("--dst", type=str, default=None)      # server IP
 parser.add_argument("--algo", type=str, required=True)    # TCP CC used by this flow (reno/bbr/cubic/vegas)
+
 args = parser.parse_args()
 
 expected_algo = args.algo.lower()
