@@ -5,7 +5,7 @@ The codebase is organized into several sub-directories as follows:
 
 - `build_features/`: after collect the data, clean data and sort the features we want (Section 3.2)
 - `collect_data/`: Data and scripts for the case studies (Section 3.1)
-- `collect_data_test/`: collect the data for new RTT and BW
+- `collect_data_test/`: collect the data for new RTT and BW that we can test our model
 - `plot/` plot the picture that shows each congestion control in the top three importance of features (Section 4)
 - `result/` confusion matrix and tables for test and validation (Section 4)
 - `train_model/` Source code for training model (Section 3.3)
